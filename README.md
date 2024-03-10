@@ -49,10 +49,6 @@ The following endpoints are available in the API:
 - `PUT /api/v1/users/{userId}`: Update a user by ID.
 - `DELETE /api/v1/users/{userId}`: Delete a user by ID.
 
-## Malfunction
-
-Migration does not work fully.
-
 ## DB structure
 
 ```
