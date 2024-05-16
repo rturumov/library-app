@@ -3,7 +3,9 @@ module library-app
 go 1.22rc2
 
 require (
-	github.com/gorilla/mux v1.8.1
+	github.com/golang-migrate/migrate/v4 v4.17.1
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/lib/pq v1.10.9
-	golang.org/x/crypto v0.21.0
 )
+
+require go.uber.org/atomic v1.11.0 // indirect
