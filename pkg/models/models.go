@@ -15,7 +15,7 @@ type Models struct {
 		Get(id int64) (*Book, error)
 		Update(book *Book) error
 		Delete(id int64) error
-		GetAll(title string, genres []string, filters Filters) ([]*Book, error)
+		GetAll(title string, genres []string, filters Filters) ([]*Book, Metadata, error)
 	}
 	//Author interface {
 	//	Insert(book *Book) error

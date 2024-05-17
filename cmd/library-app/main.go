@@ -40,7 +40,7 @@ type application struct {
 
 func main() {
 	var cfg config
-	flag.IntVar(&cfg.port, "port", 8080, "API server port")
+	flag.IntVar(&cfg.port, "port", 80, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	// Read the DSN value from the db-dsn command-line flag into the config struct. We
 	// default to using our development DSN if no flag is provided.
