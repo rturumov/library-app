@@ -8,51 +8,52 @@ import (
 	"net/http"
 )
 
-func (app *application) createBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) createMangaHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title    string   `json:"title"`
-		Year     int32    `json:"year"`
-		AuthorID int64    `json:"author_id"`
-		Genres   []string `json:"genres"`
+		Title  string   `json:"title"`
+		Year   int32    `json:"year"`
+		Author string   `json:"author"`
+		Genres []string `json:"genres"`
 	}
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	book := &models.Book{
-		Title:    input.Title,
-		Year:     input.Year,
-		AuthorId: input.AuthorID,
-		Genres:   input.Genres,
+	// Copy the values from the input struct to a new Movie struct.
+	manga := &models.Manga{
+		Title:  input.Title,
+		Year:   input.Year,
+		Author: input.Author,
+		Genres: input.Genres,
 	}
 	v := validator.New()
-	if models.ValidateBook(v, book); !v.Valid() {
+	if models.ValidateManga(v, manga); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-	err = app.models.Books.Insert(book)
+	err = app.models.Mangas.Insert(manga)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
 	headers := make(http.Header)
-	headers.Set("Location", fmt.Sprintf("/v1/books/%d", book.ID))
+	headers.Set("Location", fmt.Sprintf("/v1/manga/%d", manga.ID))
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"book": book}, headers)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"manga": manga}, headers)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) showBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) showMangaHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	book, err := app.models.Books.Get(id)
+	manga, err := app.models.Mangas.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrRecordNotFound):
@@ -62,19 +63,19 @@ func (app *application) showBookHandler(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"book": book}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"manga": manga}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) updateBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) updateMangaHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	book, err := app.models.Books.Get(id)
+	manga, err := app.models.Mangas.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrRecordNotFound):
@@ -85,43 +86,43 @@ func (app *application) updateBookHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	var input struct {
-		Title    string   `json:"title"`
-		Year     int32    `json:"year"`
-		AuthorId int64    `json:"author_id"`
-		Genres   []string `json:"genres"`
+		Title  string   `json:"title"`
+		Year   int32    `json:"year"`
+		Author string   `json:"author"`
+		Genres []string `json:"genres"`
 	}
 	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	book.Title = input.Title
-	book.Year = input.Year
-	book.AuthorId = input.AuthorId
-	book.Genres = input.Genres
+	manga.Title = input.Title
+	manga.Year = input.Year
+	manga.Author = input.Author
+	manga.Genres = input.Genres
 	v := validator.New()
-	if models.ValidateBook(v, book); !v.Valid() {
+	if models.ValidateManga(v, manga); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-	err = app.models.Books.Update(book)
+	err = app.models.Mangas.Update(manga)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"book": book}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"manga": manga}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) deleteBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) deleteMangaHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	err = app.models.Books.Delete(id)
+	err = app.models.Mangas.Delete(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrRecordNotFound):
@@ -137,7 +138,7 @@ func (app *application) deleteBookHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) listMangasHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Title  string
 		Genres []string
@@ -152,19 +153,18 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 
 	input.Filters.Sort = app.readString(qs, "sort", "id")
 	input.Filters.SortSafelist = []string{"id", "title", "year", "author", "-id", "-title", "-year", "-author"}
-
 	if models.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	books, metadata, err := app.models.Books.GetAll(input.Title, input.Genres, input.Filters)
+	mangas, metadata, err := app.models.Mangas.GetAll(input.Title, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"books": books, "metadata": metadata}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"manga": mangas, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

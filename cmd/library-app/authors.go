@@ -8,51 +8,46 @@ import (
 	"net/http"
 )
 
-func (app *application) createBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) createAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title    string   `json:"title"`
-		Year     int32    `json:"year"`
-		AuthorID int64    `json:"author_id"`
-		Genres   []string `json:"genres"`
+		Name string `json:"name"`
+		Id   int64  `json:"id"`
 	}
+
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	book := &models.Book{
-		Title:    input.Title,
-		Year:     input.Year,
-		AuthorId: input.AuthorID,
-		Genres:   input.Genres,
+
+	author := &models.Author{
+		Name: input.Name,
+		Id:   input.Id,
 	}
-	v := validator.New()
-	if models.ValidateBook(v, book); !v.Valid() {
-		app.failedValidationResponse(w, r, v.Errors)
-		return
-	}
-	err = app.models.Books.Insert(book)
+
+	err = app.models.Authors.Insert(author)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
 	headers := make(http.Header)
-	headers.Set("Location", fmt.Sprintf("/v1/books/%d", book.ID))
+	headers.Set("Location", fmt.Sprintf("/v1/authors/%d", author.Id))
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"book": book}, headers)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"author": author}, headers)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) showBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) showAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	book, err := app.models.Books.Get(id)
+
+	author, err := app.models.Authors.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrRecordNotFound):
@@ -62,19 +57,19 @@ func (app *application) showBookHandler(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"book": book}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"author": author}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) updateBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) updateAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	book, err := app.models.Books.Get(id)
+	author, err := app.models.Authors.Get(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrRecordNotFound):
@@ -85,43 +80,33 @@ func (app *application) updateBookHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	var input struct {
-		Title    string   `json:"title"`
-		Year     int32    `json:"year"`
-		AuthorId int64    `json:"author_id"`
-		Genres   []string `json:"genres"`
+		Name string `json:"name"`
 	}
 	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	book.Title = input.Title
-	book.Year = input.Year
-	book.AuthorId = input.AuthorId
-	book.Genres = input.Genres
-	v := validator.New()
-	if models.ValidateBook(v, book); !v.Valid() {
-		app.failedValidationResponse(w, r, v.Errors)
-		return
-	}
-	err = app.models.Books.Update(book)
+	author.Name = input.Name
+
+	err = app.models.Authors.Update(author)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"book": book}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"author": author}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) deleteBookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) deleteAuthorHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	err = app.models.Books.Delete(id)
+	err = app.models.Authors.Delete(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrRecordNotFound):
@@ -131,20 +116,59 @@ func (app *application) deleteBookHandler(w http.ResponseWriter, r *http.Request
 		}
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully deleted"}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "author successfully deleted"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) listAuthorsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title  string
-		Genres []string
+		Name string
+		Id   int64
+		models.Filters
+	}
+
+	authors, err := app.models.Authors.GetAll(input.Name, input.Id, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"authors": authors}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) listBooksByAuthorHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	_, err = app.models.Authors.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Title    string
+		Year     int32
+		AuthorId int64
+		Genres   []string
 		models.Filters
 	}
 	v := validator.New()
+
 	qs := r.URL.Query()
+
 	input.Title = app.readString(qs, "title", "")
 	input.Genres = app.readCSV(qs, "genres", []string{})
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
@@ -158,14 +182,9 @@ func (app *application) listBooksHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	books, metadata, err := app.models.Books.GetAll(input.Title, input.Genres, input.Filters)
+	_, _, err = app.models.Books.GetAll(input.Title, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
-	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"books": books, "metadata": metadata}, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
 	}
 }

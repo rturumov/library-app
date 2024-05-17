@@ -5,25 +5,33 @@ import (
 	"net/http"
 )
 
-func (app *application) routes() *httprouter.Router {
-	// Initialize a new httprouter router instance.
+func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
-	// Convert the notFoundResponse() helper to a http.Handler using the
-	// http.HandlerFunc() adapter, and then set it as the custom error handler for 404
-	// Not Found responses.
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
-
-	// Likewise, convert the methodNotAllowedResponse() helper to a http.Handler and set
-	// it as the custom error handler for 405 Method Not Allowed responses.
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
+
 	router.HandlerFunc(http.MethodGet, "/v1/books", app.listBooksHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/books", app.createBookHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/books/:id", app.showBookHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/books/:id", app.updateBookHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/books/:id", app.deleteBookHandler)
-	// Return the httprouter instance.
-	return router
+
+	router.HandlerFunc(http.MethodGet, "/v1/manga", app.listMangasHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/manga", app.createMangaHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/manga/:id", app.showMangaHandler)
+	router.HandlerFunc(http.MethodPut, "/v1/manga/:id", app.updateMangaHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/manga/:id", app.deleteMangaHandler)
+
+	router.HandlerFunc(http.MethodGet, "/v1/authors", app.listAuthorsHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/authors", app.createAuthorHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/authors/:id", app.showAuthorHandler)
+	router.HandlerFunc(http.MethodPut, "/v1/authors/:id", app.updateAuthorHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/authors/:id", app.deleteAuthorHandler)
+	//router.HandlerFunc(http.MethodGet, "/v1/authors/:id/books", app.listBooksByAuthorHandler)
+	//router.HandlerFunc(http.MethodGet, "/v1/authors/:id/books", app.listBooksByAuthorHandler)
+
+	return app.recoverPanic(app.rateLimit(router))
 }
