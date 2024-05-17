@@ -67,8 +67,8 @@ The following endpoints are available in the API:
 
 ### Manga and Books
 
-- `GET /v1/{author_id}/books`: Get all manga.
-- `GET /v1/{author_id}/manga`: Get all manga.
+- `GET /v1/{author_id}/books`: Get all books by a author.
+- `GET /v1/{author_id}/manga`: Get all manga by a author.
 
 ## DB structure
 
