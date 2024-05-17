@@ -30,8 +30,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/authors/:id", app.showAuthorHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/authors/:id", app.updateAuthorHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/authors/:id", app.deleteAuthorHandler)
-	//router.HandlerFunc(http.MethodGet, "/v1/authors/:id/books", app.listBooksByAuthorHandler)
-	//router.HandlerFunc(http.MethodGet, "/v1/authors/:id/books", app.listBooksByAuthorHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/authors/:id/books", app.listBooksByAuthorHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/authors/:id/manga", app.listMangaByAuthorHandler)
 
 	return app.recoverPanic(app.rateLimit(router))
 }

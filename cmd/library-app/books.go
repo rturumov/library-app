@@ -106,7 +106,12 @@ func (app *application) updateBookHandler(w http.ResponseWriter, r *http.Request
 	}
 	err = app.models.Books.Update(book)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, models.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 	err = app.writeJSON(w, http.StatusOK, envelope{"book": book}, nil)

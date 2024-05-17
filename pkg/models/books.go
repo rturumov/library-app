@@ -53,7 +53,7 @@ func (m BookModel) Get(id int64) (*Book, error) {
 		return nil, ErrRecordNotFound
 	}
 	query := `
-        SELECT id, created_at, title, year, author, genres, version
+        SELECT id, created_at, title, year, author_id, genres, version
         FROM books
         WHERE id = $1`
 	var book Book

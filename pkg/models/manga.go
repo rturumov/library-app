@@ -15,7 +15,7 @@ type Manga struct {
 	CreatedAt time.Time `json:"-"`
 	Title     string    `json:"title"`
 	Year      int32     `json:"year,omitempty"`
-	Author    string    `json:"author,omitempty"`
+	AuthorId  int64     `json:"author,omitempty"`
 	Genres    []string  `json:"genres,omitempty"`
 	Version   int32     `json:"version"`
 }
@@ -26,8 +26,6 @@ func ValidateManga(v *validator.Validator, manga *Manga) {
 	v.Check(manga.Year != 0, "year", "must be provided")
 	v.Check(manga.Year >= 1888, "year", "must be greater than 1888")
 	v.Check(manga.Year <= int32(time.Now().Year()), "year", "must not be in the future")
-	v.Check(manga.Author != "", "author", "must be provided")
-	v.Check(len(manga.Author) <= 500, "author", "must not be more than 500 bytes long")
 	v.Check(manga.Genres != nil, "genres", "must be provided")
 	v.Check(len(manga.Genres) >= 1, "genres", "must contain at least 1 genre")
 	v.Check(len(manga.Genres) <= 5, "genres", "must not contain more than 5 genres")
@@ -41,11 +39,11 @@ type MangaModel struct {
 func (m MangaModel) Insert(manga *Manga) error {
 
 	query := `
-        INSERT INTO mangas (title, year, author, genres)
+        INSERT INTO mangas (title, year, author_id, genres)
         VALUES ($1, $2, $3, $4)
         RETURNING id, created_at, version`
 
-	args := []interface{}{manga.Title, manga.Year, manga.Author, pq.Array(manga.Genres)}
+	args := []interface{}{manga.Title, manga.Year, manga.AuthorId, pq.Array(manga.Genres)}
 
 	return m.DB.QueryRow(query, args...).Scan(&manga.ID, &manga.CreatedAt, &manga.Version)
 }
@@ -55,7 +53,7 @@ func (m MangaModel) Get(id int64) (*Manga, error) {
 		return nil, ErrRecordNotFound
 	}
 	query := `
-        SELECT id, created_at, title, year, author, genres, version
+        SELECT id, created_at, title, year, author_id, genres, version
         FROM mangas
         WHERE id = $1`
 	var manga Manga
@@ -64,7 +62,7 @@ func (m MangaModel) Get(id int64) (*Manga, error) {
 		&manga.CreatedAt,
 		&manga.Title,
 		&manga.Year,
-		&manga.Author,
+		&manga.AuthorId,
 		pq.Array(&manga.Genres),
 		&manga.Version,
 	)
@@ -82,13 +80,13 @@ func (m MangaModel) Get(id int64) (*Manga, error) {
 func (m MangaModel) Update(manga *Manga) error {
 	query := `
         UPDATE mangas
-        SET title = $1, year = $2, author = $3, genres = $4, version = version + 1
+        SET title = $1, year = $2, author_id = $3, genres = $4, version = version + 1
         WHERE id = $5
         RETURNING version`
 	args := []interface{}{
 		manga.Title,
 		manga.Year,
-		manga.Author,
+		manga.AuthorId,
 		pq.Array(manga.Genres),
 		manga.ID,
 	}
@@ -118,7 +116,7 @@ func (m MangaModel) Delete(id int64) error {
 
 func (m MangaModel) GetAll(title string, genres []string, filters Filters) ([]*Manga, Metadata, error) {
 	query := fmt.Sprintf(`
-        SELECT count(*) OVER(), id, created_at, title, year, author, genres, version
+        SELECT count(*) OVER(), id, created_at, title, year, author_id, genres, version
         FROM mangas
         WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
         AND (genres @> $2 OR $2 = '{}')     
@@ -145,7 +143,7 @@ func (m MangaModel) GetAll(title string, genres []string, filters Filters) ([]*M
 			&manga.CreatedAt,
 			&manga.Title,
 			&manga.Year,
-			&manga.Author,
+			&manga.AuthorId,
 			pq.Array(&manga.Genres),
 			&manga.Version,
 		)

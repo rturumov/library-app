@@ -10,10 +10,10 @@ import (
 
 func (app *application) createMangaHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Title  string   `json:"title"`
-		Year   int32    `json:"year"`
-		Author string   `json:"author"`
-		Genres []string `json:"genres"`
+		Title    string   `json:"title"`
+		Year     int32    `json:"year"`
+		AuthorId int64    `json:"author_id"`
+		Genres   []string `json:"genres"`
 	}
 	err := app.readJSON(w, r, &input)
 	if err != nil {
@@ -22,10 +22,10 @@ func (app *application) createMangaHandler(w http.ResponseWriter, r *http.Reques
 	}
 	// Copy the values from the input struct to a new Movie struct.
 	manga := &models.Manga{
-		Title:  input.Title,
-		Year:   input.Year,
-		Author: input.Author,
-		Genres: input.Genres,
+		Title:    input.Title,
+		Year:     input.Year,
+		AuthorId: input.AuthorId,
+		Genres:   input.Genres,
 	}
 	v := validator.New()
 	if models.ValidateManga(v, manga); !v.Valid() {
@@ -86,10 +86,10 @@ func (app *application) updateMangaHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	var input struct {
-		Title  string   `json:"title"`
-		Year   int32    `json:"year"`
-		Author string   `json:"author"`
-		Genres []string `json:"genres"`
+		Title    string   `json:"title"`
+		Year     int32    `json:"year"`
+		AuthorId int64    `json:"author_id"`
+		Genres   []string `json:"genres"`
 	}
 	err = app.readJSON(w, r, &input)
 	if err != nil {
@@ -98,7 +98,7 @@ func (app *application) updateMangaHandler(w http.ResponseWriter, r *http.Reques
 	}
 	manga.Title = input.Title
 	manga.Year = input.Year
-	manga.Author = input.Author
+	manga.AuthorId = input.AuthorId
 	manga.Genres = input.Genres
 	v := validator.New()
 	if models.ValidateManga(v, manga); !v.Valid() {
