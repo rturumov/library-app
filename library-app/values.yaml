@@ -1,0 +1,16 @@
+replicaCount: 1
+
+app:
+  image: library-app:latest
+  port: 8000
+  env:
+    dbDsn: "postgres://postgres:12345@library-app-postgres-service:5432/library-app?sslmode=disable"
+
+postgres:
+  user: postgres
+  password: "12345"
+  db: library-app
+  storage: 1Gi
+
+service:
+  port: 8000
