@@ -22,4 +22,7 @@ spec:
             - containerPort: {{ .Values.app.port | int }}
           env:
             - name: DB_DSN
-              value: "{{ .Values.app.env.dbDsn }}"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Release.Name }}-config
+                  key: DB_DSN

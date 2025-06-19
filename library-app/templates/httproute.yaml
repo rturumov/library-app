@@ -1,0 +1,19 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Release.Name }}-route
+  namespace: default
+  labels:
+    app: {{ .Release.Name }}-app
+spec:
+  parentRefs:
+    - name: {{ .Release.Name }}-gateway
+      namespace: nginx-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /v1
+      backendRefs:
+        - name: {{ .Release.Name }}-service
+          port: 8000
